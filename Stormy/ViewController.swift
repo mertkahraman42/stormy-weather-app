@@ -34,21 +34,29 @@ class ViewController: UIViewController {
     @IBOutlet weak var refreshButton: UIButton!
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     
-    private let forecastAPIKey = "d03b85c42749b58fea3034bbfb9ec2de" // We cant read this property elsewhere in the app
-    
+    lazy var forecastAPIClient = ForecastAPIClient(APIKey: "d03b85c42749b58fea3034bbfb9ec2de")
+    let coordinate = Coordinate(latitude: 41.066366, longitude: 29.017375)
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
-        let icon = WeatherIcon.PartlyCloudyDay.image
-        let currentWeather = CurrentWeather(temperature: 56.0, humidity: 1.0, precipitationProbability: 1.0, summary: "Wet and rainy", icon: icon)
+     
+        forecastAPIClient.fetchCurrentWeather(coordinate) { result in
+            switch result {
+            case .Success(let currentWeather):
+                dispatch_async(dispatch_get_main_queue()) {
+                    // Whatever code we put in here will be executed in the main queue
+                    self.display(currentWeather) // we included self. because this is a closure!
+                }
+            case .Failure(let error as NSError):
+                dispatch_async(dispatch_get_main_queue()) {
+                    self.showAlert("Unable to retrieve forecast", message: error.localizedDescription)
+                }
+            default: break
+            }
+        }
         
-        display(currentWeather)
-        
-        
-        dataTask.resume() // Task is only activated if we fire this code!
-        // Our dataTask is carried on a background thread
         
         
     }
@@ -64,6 +72,14 @@ class ViewController: UIViewController {
         currentHumidityLabel.text = weather.humidityString
         currentSummaryLabel.text = weather.summary
         currentWeatherIcon.image = weather.icon
+    }
+    
+    func showAlert(title: String, message: String?, style: UIAlertControllerStyle = .Alert) {
+        let alertController = UIAlertController(title: title, message: message, preferredStyle: style)
+        let dismissAction = UIAlertAction(title: "Ok", style: .Default, handler: nil)
+        alertController.addAction(dismissAction)
+        
+        presentViewController(alertController, animated: true, completion: nil)
     }
 }
 
