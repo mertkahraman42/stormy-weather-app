@@ -78,26 +78,27 @@ extension APIClient {
     
     func fetch<T>(request: NSURLRequest, parse: JSON -> T?, completion: APIResult<T> -> Void) { // In this func, we want to use the request to get a JSON object, parse it, and provide an instance of the model.
         
-        let task = JSONTaskWithRequest(request) { json, response, error in
-            
-            guard let json = json else { // We parse the json that JSONTaskWithRequest method returns
-                if let error = error {
-                    completion(.Failure(error))
-                } else { // json is nil and error is nil
-                    // TODO: Implement Error Handling
+        dispatch_async(dispatch_get_main_queue()) {
+            let task = self.JSONTaskWithRequest(request) { json, response, error in
+                
+                guard let json = json else { // We parse the json that JSONTaskWithRequest method returns
+                    if let error = error {
+                        completion(.Failure(error))
+                    } else { // json is nil and error is nil
+                        // TODO: Implement Error Handling
+                    }
+                    return
                 }
-                return
+                
+                if let value = parse(json) { // We feed that json into the parse function to see if it succeeded
+                    completion(.Success(value)) // If it succeeded
+                } else {
+                    let error = NSError(domain: TRENetworkingErrorDomain, code: UnexpectedResponseError, userInfo: nil)
+                    completion(.Failure(error)) // If it failed
+                }
             }
-            
-            if let value = parse(json) { // We feed that json into the parse function to see if it succeeded
-            completion(.Success(value)) // If it succeeded
-            } else {
-                let error = NSError(domain: TRENetworkingErrorDomain, code: UnexpectedResponseError, userInfo: nil)
-                completion(.Failure(error)) // If it failed
-            }
-        }
-        
         task.resume()
+        }
         
     }
 }

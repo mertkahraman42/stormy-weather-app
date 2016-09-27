@@ -32,6 +32,7 @@ class ViewController: UIViewController {
     @IBOutlet weak var currentWeatherIcon: UIImageView!
     @IBOutlet weak var currentSummaryLabel: UILabel!
     @IBOutlet weak var refreshButton: UIButton!
+    
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     
     lazy var forecastAPIClient = ForecastAPIClient(APIKey: "d03b85c42749b58fea3034bbfb9ec2de")
@@ -40,30 +41,27 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-        
-     
-        forecastAPIClient.fetchCurrentWeather(coordinate) { result in
-            switch result {
-            case .Success(let currentWeather):
-                dispatch_async(dispatch_get_main_queue()) {
-                    // Whatever code we put in here will be executed in the main queue
-                    self.display(currentWeather) // we included self. because this is a closure!
-                }
-            case .Failure(let error as NSError):
-                dispatch_async(dispatch_get_main_queue()) {
-                    self.showAlert("Unable to retrieve forecast", message: error.localizedDescription)
-                }
-            default: break
-            }
-        }
-        
-        
+        fetchCurrentWeather()
         
     }
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
+    }
+    
+    func fetchCurrentWeather() {
+        forecastAPIClient.fetchCurrentWeather(coordinate) { result in
+            self.toggleRefreshAnimation(false)
+            switch result {
+            case .Success(let currentWeather):
+                // Whatever code we put in here will be executed in the main queue
+                self.display(currentWeather) // we included self. because this is a closure!
+            case .Failure(let error as NSError):
+                self.showAlert("Unable to retrieve forecast", message: error.localizedDescription)
+            default: break
+            }
+        }
     }
 
     func display(weather: CurrentWeather) {
@@ -80,6 +78,21 @@ class ViewController: UIViewController {
         alertController.addAction(dismissAction)
         
         presentViewController(alertController, animated: true, completion: nil)
+    }
+    
+    @IBAction func refreshWeather(sender: AnyObject) {
+        toggleRefreshAnimation(true)
+        fetchCurrentWeather()
+    }
+    
+    func toggleRefreshAnimation(on: Bool) {
+        refreshButton.hidden = on
+        
+        if on {
+            activityIndicator.startAnimating()
+        } else {
+            activityIndicator.stopAnimating()
+        }
     }
 }
 
