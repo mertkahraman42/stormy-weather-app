@@ -78,9 +78,10 @@ extension APIClient {
     
     func fetch<T>(request: NSURLRequest, parse: JSON -> T?, completion: APIResult<T> -> Void) { // In this func, we want to use the request to get a JSON object, parse it, and provide an instance of the model.
         
-        dispatch_async(dispatch_get_main_queue()) {
-            let task = self.JSONTaskWithRequest(request) { json, response, error in
+            let task = JSONTaskWithRequest(request) { json, response, error in
                 
+                dispatch_async(dispatch_get_main_queue()) {
+
                 guard let json = json else { // We parse the json that JSONTaskWithRequest method returns
                     if let error = error {
                         completion(.Failure(error))
@@ -97,8 +98,8 @@ extension APIClient {
                     completion(.Failure(error)) // If it failed
                 }
             }
-        task.resume()
         }
+        task.resume()
         
     }
 }
